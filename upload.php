@@ -8,7 +8,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 ini_set('max_execution_time', 0);
 ini_set('memory_limit', '1024M');
 
-// Column mappings
+// Column mappings (unchanged)
 $columnsToUse = [
     ['docnumber'=>'TL No','tranno'=>'Txn ID','cdate'=>'Date','totalamt'=>'Amount','gateway'=>'Gateway','PaymentType'=>'Payment Type','status'=>'Status'],
     ['e-holding'=>'Holding No','transactio id'=>'Txn ID','date'=>'Date','paid amount'=>'Amount','gateway'=>'Gateway','status'=>'Status'],
@@ -30,10 +30,11 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         if(isset($_FILES["file$i"]) && $_FILES["file$i"]['error'] == 0){
             $fileTmp = $_FILES["file$i"]['tmp_name'];
             $fileName = $_FILES["file$i"]['name'];
+            $bankName = $_POST["bank_name$i"] ?? null; // get selected bank name
 
-            // Insert file record without storing file
-            $stmt = $conn->prepare("INSERT INTO uploaded_files (filename) VALUES (?)");
-            $stmt->bind_param("s", $fileName);
+            // Insert file record with bank_name
+            $stmt = $conn->prepare("INSERT INTO uploaded_files (filename, bank_name) VALUES (?, ?)");
+            $stmt->bind_param("ss", $fileName, $bankName);
             $stmt->execute();
             $fileId = $stmt->insert_id;
             $uploadedFileIds[] = $fileId;
@@ -143,8 +144,52 @@ function insertChunk($dataChunk, $fileId, $conn){
 <body>
     <h2>Upload 2 Excel Files</h2>
     <form method="post" enctype="multipart/form-data">
+        <label>File 1:</label><br>
         <input type="file" name="file1" required><br><br>
+        <label>Bank Portal:</label><br>
+        <select name="bank_name1" required style="padding:8px; border:1px solid #ccc; border-radius:4px;">
+            <option value="">-- Select Bank --</option>
+            <option value="DNCC Bank Portal">DNCC Bank Portal</option>
+            <option value="DBBL Holding">DBBL Holding</option>
+            <option value="DBBL Holding Due">DBBL Holding Due</option>
+            <option value="DBBL MFS">DBBL MFS</option>
+            <option value="DBBL MFS Due">DBBL MFS Due</option>
+            <option value="Bkash Holding">Bkash Holding</option>
+            <option value="Sonali Bank">Sonali Bank</option>
+            <option value="Standard Bank">Standard Bank</option>
+            <option value="Modhumoti Bank">Modhumoti Bank</option>
+            <option value="Trust TAP Holding">Trust TAP Holding</option>
+            <option value="Trust TAP TL">Trust TAP TL</option>
+            <option value="Upay MFS">Upay MFS</option>
+            <option value="OK Wallet">OK Wallet</option>
+            <option value="DBBL TL Collection">DBBL TL Collection</option>
+            <option value="DBBL TL Correction">DBBL TL Correction</option>
+            <option value="Bkash TL">Bkash TL</option>
+        </select><br><br>
+
+        <label>File 2:</label><br>
         <input type="file" name="file2" required><br><br>
+        <label>Bank Portal:</label><br>
+        <select name="bank_name2" required style="padding:8px; border:1px solid #ccc; border-radius:4px;">
+            <option value="">-- Select Bank --</option>
+            <option value="DNCC Bank Portal">DNCC Bank Portal</option>
+            <option value="DBBL Holding">DBBL Holding</option>
+            <option value="DBBL Holding Due">DBBL Holding Due</option>
+            <option value="DBBL MFS">DBBL MFS</option>
+            <option value="DBBL MFS Due">DBBL MFS Due</option>
+            <option value="Bkash Holding">Bkash Holding</option>
+            <option value="Sonali Bank">Sonali Bank</option>
+            <option value="Standard Bank">Standard Bank</option>
+            <option value="Modhumoti Bank">Modhumoti Bank</option>
+            <option value="Trust TAP Holding">Trust TAP Holding</option>
+            <option value="Trust TAP TL">Trust TAP TL</option>
+            <option value="Upay MFS">Upay MFS</option>
+            <option value="OK Wallet">OK Wallet</option>
+            <option value="DBBL TL Collection">DBBL TL Collection</option>
+            <option value="DBBL TL Correction">DBBL TL Correction</option>
+            <option value="Bkash TL">Bkash TL</option>
+        </select><br><br>
+
         <button type="submit">Upload</button>
     </form>
 </body>

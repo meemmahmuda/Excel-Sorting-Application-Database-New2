@@ -14,9 +14,9 @@ if(isset($_GET['delete_file'])){
     exit();
 }
 
-// Fetch all files
+// Fetch all files (LATEST FIRST)
 $allFiles = [];
-$res = $conn->query("SELECT * FROM uploaded_files ORDER BY id ASC");
+$res = $conn->query("SELECT * FROM uploaded_files ORDER BY id DESC");
 while($row = $res->fetch_assoc()){
     $allFiles[] = $row;
 }
@@ -64,7 +64,7 @@ function downloadExcel($rows, $filename){
     exit();
 }
 
-// Download requested file from DB
+// Download requested file
 if(isset($_GET['download_file'])){
     $fileId = intval($_GET['download_file']);
     $res = $conn->query("SELECT * FROM uploaded_files WHERE id=$fileId");
@@ -89,17 +89,20 @@ if(isset($_GET['download_file'])){
     </style>
 </head>
 <body>
+
 <h2>All Uploaded and Unmatched Files</h2>
+
 <table>
     <tr>
-        <!-- <th>#</th> -->
         <th>Filename</th>
+        <th>Uploaded Time</th>
         <th>Actions</th>
     </tr>
-    <?php foreach($allFiles as $index => $file): ?>
+
+    <?php foreach($allFiles as $file): ?>
     <tr>
-    
         <td><?= htmlspecialchars($file['filename']) ?></td>
+        <td><?= htmlspecialchars($file['uploaded_at']) ?></td>
         <td>
             <a href="download.php?download_file=<?= $file['id'] ?>"><button>Download</button></a>
             <a href="download.php?delete_file=<?= $file['id'] ?>" onclick="return confirm('Are you sure to delete this file?')"><button>Delete</button></a>
@@ -108,7 +111,9 @@ if(isset($_GET['download_file'])){
     </tr>
     <?php endforeach; ?>
 </table>
+
 <br>
 <a href="upload.php"><button>Upload More Files</button></a>
+
 </body>
 </html>
