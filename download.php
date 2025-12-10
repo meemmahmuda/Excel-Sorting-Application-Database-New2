@@ -5,7 +5,7 @@ require 'vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-// Delete file record
+// Delete file
 if(isset($_GET['delete_file'])){
     $fileId = intval($_GET['delete_file']);
     $conn->query("DELETE FROM uploaded_files WHERE id=$fileId");
@@ -14,57 +14,38 @@ if(isset($_GET['delete_file'])){
     exit();
 }
 
-// Fetch all files (LATEST FIRST)
+// Fetch all files
 $allFiles = [];
 $res = $conn->query("SELECT * FROM uploaded_files ORDER BY id DESC");
-while($row = $res->fetch_assoc()){
-    $allFiles[] = $row;
-}
+while($row = $res->fetch_assoc()) $allFiles[] = $row;
 
-// Clean rows for Excel export
+// Clean rows for Excel
 function cleanRows($rows){
     if(empty($rows)) return [];
     foreach($rows as &$row){
         unset($row['id'], $row['file_id']);
         if(!isset($row['status'])) $row['status'] = '';
     }
-    $columns = array_keys(reset($rows));
-    foreach($columns as $col){
-        if($col === 'status') continue;
-        $allEmpty = true;
-        foreach($rows as $r){
-            if(isset($r[$col]) && trim($r[$col]) !== ''){
-                $allEmpty = false;
-                break;
-            }
-        }
-        if($allEmpty){
-            foreach($rows as &$r) unset($r[$col]);
-        }
-    }
     return $rows;
 }
 
-// Generate Excel and download
+// Download Excel
 function downloadExcel($rows, $filename){
     if(empty($rows)) return;
     $rows = cleanRows($rows);
-
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
-    $sheet->fromArray(array_keys(reset($rows)), null, 'A1'); // header
-    $sheet->fromArray(array_map('array_values', $rows), null, 'A2'); // data
+    $sheet->fromArray(array_keys(reset($rows)), null, 'A1');
+    $sheet->fromArray(array_map('array_values', $rows), null, 'A2');
 
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="'.$filename.'"');
     header('Cache-Control: max-age=0');
-
     $writer = new Xlsx($spreadsheet);
     $writer->save('php://output');
     exit();
 }
 
-// Download requested file
 if(isset($_GET['download_file'])){
     $fileId = intval($_GET['download_file']);
     $res = $conn->query("SELECT * FROM uploaded_files WHERE id=$fileId");
@@ -89,31 +70,28 @@ if(isset($_GET['download_file'])){
     </style>
 </head>
 <body>
-
 <h2>All Uploaded and Unmatched Files</h2>
-
 <table>
-    <tr>
-        <th>Filename</th>
-        <th>Uploaded Time</th>
-        <th>Actions</th>
-    </tr>
-
-    <?php foreach($allFiles as $file): ?>
-    <tr>
-        <td><?= htmlspecialchars($file['filename']) ?></td>
-        <td><?= htmlspecialchars($file['uploaded_at']) ?></td>
-        <td>
-            <a href="download.php?download_file=<?= $file['id'] ?>"><button>Download</button></a>
-            <a href="download.php?delete_file=<?= $file['id'] ?>" onclick="return confirm('Are you sure to delete this file?')"><button>Delete</button></a>
-            <a href="view_file.php?file_id=<?= $file['id'] ?>"><button>View</button></a>
-        </td>
-    </tr>
-    <?php endforeach; ?>
+<tr>
+    <th>Filename</th>
+    <th>Type</th>
+    <th>Uploaded Time</th>
+    <th>Actions</th>
+</tr>
+<?php foreach($allFiles as $file): ?>
+<tr>
+    <td><?= htmlspecialchars($file['filename']) ?></td>
+    <td><?= htmlspecialchars($file['type']) ?></td>
+    <td><?= htmlspecialchars($file['uploaded_at']) ?></td>
+    <td>
+        <a href="download.php?download_file=<?= $file['id'] ?>"><button>Download</button></a>
+        <a href="download.php?delete_file=<?= $file['id'] ?>" onclick="return confirm('Are you sure?')"><button>Delete</button></a>
+        <a href="view_file.php?file_id=<?= $file['id'] ?>"><button>View</button></a>
+    </td>
+</tr>
+<?php endforeach; ?>
 </table>
-
 <br>
 <a href="upload.php"><button>Upload More Files</button></a>
-
 </body>
 </html>
