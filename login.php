@@ -9,19 +9,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username_or_email = trim($_POST['username_or_email']);
     $password = trim($_POST['password']);
 
-    $query = "SELECT id, username, password FROM users WHERE username = ? OR email = ? LIMIT 1";
+    // Include role and is_approved check
+    $query = "SELECT id, username, password, role, is_approved 
+              FROM users 
+              WHERE (username = ? OR email = ?) 
+              LIMIT 1";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("ss", $username_or_email, $username_or_email);
     $stmt->execute();
     $stmt->store_result();
 
     if ($stmt->num_rows == 1) {
-        $stmt->bind_result($id, $username, $hashedPassword);
+        $stmt->bind_result($id, $username, $hashedPassword, $role, $is_approved);
         $stmt->fetch();
 
-        if (password_verify($password, $hashedPassword)) {
+        if ($is_approved == 0) {
+            $message = "Your account is not approved yet!";
+        } elseif (password_verify($password, $hashedPassword)) {
             $_SESSION['user_id'] = $id;
             $_SESSION['username'] = $username;
+            $_SESSION['role'] = $role; 
             header("Location: upload.php");
             exit();
         } else {

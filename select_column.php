@@ -1,11 +1,19 @@
 <?php
 session_start();
 include 'db.php';
-include 'session.php';  // protect page
-include 'header.php'; 
+include 'session.php'; // protect page
+include 'header.php';
 
-if(!isset($_SESSION['uploaded_file_ids'])){
-    die("No uploaded files found.");
+// Check user logged in
+if(!isset($_SESSION['user_id'])){
+    header("Location: login.php");
+    exit();
+}
+
+// Check uploaded files
+if(empty($_SESSION['uploaded_file_ids']) || count($_SESSION['uploaded_file_ids']) < 2){
+    header("Location: upload.php");
+    exit();
 }
 
 $fileIds = $_SESSION['uploaded_file_ids'];

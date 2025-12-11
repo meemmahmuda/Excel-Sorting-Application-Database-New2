@@ -5,12 +5,17 @@ include 'session.php';   // protect the page
 include 'header.php';  
 require 'vendor/autoload.php';
 
+// Validate file_id
 if(!isset($_GET['file_id'])) die("No file selected.");
 $fileId = intval($_GET['file_id']);
+$userId = $_SESSION['user_id'];
 
-// Fetch file info
-$res = $conn->query("SELECT filename, type FROM uploaded_files WHERE id=$fileId");
-if(!$file = $res->fetch_assoc()) die("File not found.");
+// Fetch file info, ensuring it belongs to logged-in user
+$stmt = $conn->prepare("SELECT filename, type FROM uploaded_files WHERE id=? AND user_id=?");
+$stmt->bind_param("ii", $fileId, $userId);
+$stmt->execute();
+$result = $stmt->get_result();
+if(!$file = $result->fetch_assoc()) die("File not found or access denied.");
 
 $fileType = $file['type'];
 
@@ -18,18 +23,20 @@ $fileType = $file['type'];
 if($fileType === 'unmatched' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status']) && isset($_POST['row_ids'])){
     $statuses = $_POST['status'];
     $rowIds = $_POST['row_ids'];
+    $updateStmt = $conn->prepare("UPDATE uploaded_data SET status=? WHERE id=? AND file_id=?");
     foreach($rowIds as $i => $rowId){
-        $stmt = $conn->prepare("UPDATE uploaded_data SET status=? WHERE id=?");
-        $stmt->bind_param("si", $statuses[$i], $rowId);
-        $stmt->execute();
+        $updateStmt->bind_param("sii", $statuses[$i], $rowId, $fileId);
+        $updateStmt->execute();
     }
     $success = "Status updated successfully.";
 }
 
-// Fetch rows
-$dataRes = $conn->query("SELECT * FROM uploaded_data WHERE file_id=$fileId");
-$rows = [];
-while($r = $dataRes->fetch_assoc()) $rows[] = $r;
+// Fetch rows for this file
+$stmt = $conn->prepare("SELECT * FROM uploaded_data WHERE file_id=?");
+$stmt->bind_param("i", $fileId);
+$stmt->execute();
+$dataRes = $stmt->get_result();
+$rows = $dataRes->fetch_all(MYSQLI_ASSOC);
 
 // Remove unwanted columns
 foreach($rows as &$r){
@@ -45,10 +52,8 @@ foreach($rows as &$r){
         body {
             background: #f2f2f2;
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
         }
-
         .container {
             max-width: 1200px;
             margin: 20px auto;
@@ -57,100 +62,22 @@ foreach($rows as &$r){
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-
-        h2 {
-            text-align: center;
-            color: #1a73e8;
-            margin-bottom: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        th {
-            background-color: #1a73e8;
-            color: #fff;
-            font-weight: bold;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 5px 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background-color: #1a73e8;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background-color: #1666c1;
-        }
-
-        .message {
-            text-align: center;
-            margin-bottom: 15px;
-            color: green;
-            font-weight: bold;
-        }
-
-        a.back-link {
-            display: inline-block;
-            margin-top: 20px;
-            text-decoration: none;
-            color: #1a73e8;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        a.back-link:hover {
-            text-decoration: underline;
-        }
-
-        /* Make table scrollable on small screens */
+        h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 14px; }
+        th { background-color: #1a73e8; color: #fff; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        input[type="text"] { width: 100%; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { margin-top: 15px; padding: 10px 20px; background-color: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: #1666c1; }
+        .message { text-align: center; margin-bottom: 15px; color: green; font-weight: bold; }
+        a.back-link { display: inline-block; margin-top: 20px; text-decoration: none; color: #1a73e8; font-weight: bold; transition: 0.3s; }
+        a.back-link:hover { text-decoration: underline; }
         @media (max-width: 768px) {
-            table, thead, tbody, th, td, tr {
-                display: block;
-            }
-            th {
-                position: sticky;
-                top: 0;
-            }
-            td {
-                padding-left: 50%;
-                position: relative;
-            }
-            td::before {
-                position: absolute;
-                left: 10px;
-                width: 45%;
-                white-space: nowrap;
-                font-weight: bold;
-                content: attr(data-label);
-            }
+            table, thead, tbody, th, td, tr { display: block; }
+            th { position: sticky; top: 0; }
+            td { padding-left: 50%; position: relative; }
+            td::before { position: absolute; left: 10px; width: 45%; white-space: nowrap; font-weight: bold; content: attr(data-label); }
         }
     </style>
 </head>

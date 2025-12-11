@@ -1,36 +1,11 @@
--- uploaded_files table
-CREATE TABLE uploaded_files (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    filename VARCHAR(255) NOT NULL,
-    bank_name VARCHAR(255) NOT NULL,
-    type ENUM('uploaded','unmatched') NOT NULL DEFAULT 'uploaded',
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- uploaded_data table
-CREATE TABLE uploaded_data (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    holding_or_tl VARCHAR(255),
-    txn_id VARCHAR(255),
-    date VARCHAR(255),
-    amount VARCHAR(255),
-    gateway VARCHAR(255),
-    payment_type VARCHAR(255),
-    status VARCHAR(255),
-    type ENUM('uploaded','unmatched') NOT NULL DEFAULT 'uploaded',
-    file_id INT NOT NULL,
-    FOREIGN KEY (file_id) REFERENCES uploaded_files(id) ON DELETE CASCADE
-);
-
-
-
-
 -- Users table
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100),
     password VARCHAR(255) NOT NULL,
+    is_approved TINYINT(1) NOT NULL DEFAULT 0,      -- 0 = Not approved, 1 = Approved
+    role ENUM('user','admin') NOT NULL DEFAULT 'user', -- role of the user
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

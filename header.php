@@ -76,6 +76,9 @@
     <div class="right">
         <a href="upload.php">Upload</a>
         <a href="download.php">Download</a>
+        <?php if (($_SESSION['role'] ?? 'user') === 'admin'): ?>
+            <a href="view_unmatched.php">View Unmatched</a>
+        <?php endif; ?>
         <a href="logout.php" class="logout">Logout</a>
     </div>
 </div>

@@ -18,10 +18,20 @@ $col2 = $_POST['col2'] ?? null;
 
 if (!$col1 || !$col2) die("Please select columns to compare.");
 
-// Fetch rows from uploaded_data table
-function fetchData($conn, $fileId) {
+$userId = $_SESSION['user_id']; // logged-in user ID
+
+// Fetch rows from uploaded_data table (only for the logged-in user)
+function fetchData($conn, $fileId, $userId) {
     $rows = [];
-    $res = $conn->query("SELECT * FROM uploaded_data WHERE file_id = $fileId");
+    $stmt = $conn->prepare("
+        SELECT ud.*
+        FROM uploaded_data ud
+        INNER JOIN uploaded_files uf ON ud.file_id = uf.id
+        WHERE ud.file_id = ? AND uf.user_id = ?
+    ");
+    $stmt->bind_param("ii", $fileId, $userId);
+    $stmt->execute();
+    $res = $stmt->get_result();
     while ($r = $res->fetch_assoc()) {
         // Skip completely blank rows
         $allBlank = true;
@@ -36,18 +46,22 @@ function fetchData($conn, $fileId) {
     return $rows;
 }
 
-// Get Bank Name
-function getBankName($conn, $fileId){
-    $q = $conn->query("SELECT bank_name FROM uploaded_files WHERE id = $fileId");
-    $r = $q->fetch_assoc();
+// Get Bank Name (only for logged-in user)
+function getBankName($conn, $fileId, $userId){
+    $stmt = $conn->prepare("SELECT bank_name FROM uploaded_files WHERE id = ? AND user_id = ?");
+    $stmt->bind_param("ii", $fileId, $userId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $r = $res->fetch_assoc();
     return $r['bank_name'] ?? 'UnknownBank';
 }
 
-$bank1 = getBankName($conn, $fileIds[0]);
-$bank2 = getBankName($conn, $fileIds[1]);
+// Fetch data for both files
+$bank1 = getBankName($conn, $fileIds[0], $userId);
+$bank2 = getBankName($conn, $fileIds[1], $userId);
 
-$data1 = fetchData($conn, $fileIds[0]);
-$data2 = fetchData($conn, $fileIds[1]);
+$data1 = fetchData($conn, $fileIds[0], $userId);
+$data2 = fetchData($conn, $fileIds[1], $userId);
 
 // Only take non-blank values for comparison
 $values1 = array_filter(array_column($data1, $col1), fn($v) => trim($v) !== '');
@@ -57,33 +71,29 @@ $values2 = array_filter(array_column($data2, $col2), fn($v) => trim($v) !== '');
 $unmatched1 = array_filter($data1, fn($r) => trim($r[$col1]) !== '' && !in_array($r[$col1], $values2));
 $unmatched2 = array_filter($data2, fn($r) => trim($r[$col2]) !== '' && !in_array($r[$col2], $values1));
 
-// Save unmatched rows as new files
-function saveUnmatched($conn, $rows, $prefix, $bankName){
+// Save unmatched rows as new files (with user restriction)
+function saveUnmatched($conn, $rows, $prefix, $bankName, $userId){
     if(empty($rows)) return null;
-
-    if (!isset($_SESSION['user_id'])) {
-        die("Error: User not logged in.");
-    }
-    $userId = $_SESSION['user_id'];
 
     $cleanBank = preg_replace('/[^A-Za-z0-9]/', '_', $bankName);
     $filename = $prefix . '_' . $cleanBank . '_' . time() . '.xlsx';
     $type = 'unmatched';
 
-    // Add user_id to the insert
+    // Insert new unmatched file
     $stmt = $conn->prepare("INSERT INTO uploaded_files (filename, bank_name, type, user_id) VALUES (?,?,?,?)");
     $stmt->bind_param("sssi", $filename, $bankName, $type, $userId);
     $stmt->execute();
     $newFileId = $stmt->insert_id;
 
-    $stmt2 = $conn->prepare(
-        "INSERT INTO uploaded_data 
+    // Insert unmatched data
+    $stmt2 = $conn->prepare("
+        INSERT INTO uploaded_data 
         (holding_or_tl, txn_id, date, amount, gateway, payment_type, status, file_id, type) 
-        VALUES (?,?,?,?,?,?,?,?,?)"
-    );
+        VALUES (?,?,?,?,?,?,?,?,?)
+    ");
 
     foreach ($rows as $row){
-        // Skip blank rows again just in case
+        // Skip blank rows
         $allBlank = true;
         foreach ($row as $v) {
             if(trim($v) !== '') {
@@ -111,11 +121,12 @@ function saveUnmatched($conn, $rows, $prefix, $bankName){
     return $newFileId;
 }
 
+// Save unmatched files for logged-in user only
 $_SESSION['unmatched_files'] = [];
+if(!empty($unmatched1)) $_SESSION['unmatched_files'][] = saveUnmatched($conn, $unmatched1, 'unmatched', $bank1, $userId);
+if(!empty($unmatched2)) $_SESSION['unmatched_files'][] = saveUnmatched($conn, $unmatched2, 'unmatched', $bank2, $userId);
 
-if(!empty($unmatched1)) $_SESSION['unmatched_files'][] = saveUnmatched($conn, $unmatched1, 'unmatched', $bank1);
-if(!empty($unmatched2)) $_SESSION['unmatched_files'][] = saveUnmatched($conn, $unmatched2, 'unmatched', $bank2);
-
+// Redirect to download page
 header("Location: download.php");
 exit();
 ?>

@@ -7,6 +7,13 @@ require 'vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+// Ensure user is logged in
+$userId = $_SESSION['user_id'] ?? 0;
+if(!$userId){
+    header("Location: login.php");
+    exit();
+}
+
 // ------------------------
 // Download Excel function
 // ------------------------
@@ -26,15 +33,10 @@ function downloadExcel($rows, $filename){
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
 
-    // Headers
     $sheet->fromArray(array_keys(reset($rows)), null, 'A1');
-
-    // Data
     $sheet->fromArray(array_map('array_values', $rows), null, 'A2');
 
-    // Clear any previous output to prevent corruption
-    if(ob_get_length()) ob_end_clean();
-
+    if(ob_get_length()) ob_end_clean(); // prevent corruption
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="'.$filename.'"');
     header('Cache-Control: max-age=0');
@@ -45,17 +47,27 @@ function downloadExcel($rows, $filename){
 }
 
 // ------------------------
-// Handle download before HTML
+// Handle download
 // ------------------------
 if(isset($_GET['download_file'])){
     $fileId = intval($_GET['download_file']);
-    $res = $conn->query("SELECT * FROM uploaded_files WHERE id=$fileId");
+    $stmt = $conn->prepare("SELECT * FROM uploaded_files WHERE id=? AND user_id=?");
+    $stmt->bind_param("ii", $fileId, $userId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
     if($row = $res->fetch_assoc()){
-        $dataRes = $conn->query("SELECT * FROM uploaded_data WHERE file_id=".$fileId);
+        $stmt2 = $conn->prepare("SELECT * FROM uploaded_data WHERE file_id=?");
+        $stmt2->bind_param("i", $fileId);
+        $stmt2->execute();
+        $dataRes = $stmt2->get_result();
+
         $rows = [];
-        while($r = $dataRes->fetch_assoc()) $rows[] = $r;
+        while ($r = $dataRes->fetch_assoc()) $rows[] = $r;
 
         downloadExcel($rows, $row['filename']);
+    } else {
+        die("File not found or access denied.");
     }
 }
 
@@ -64,8 +76,15 @@ if(isset($_GET['download_file'])){
 // ------------------------
 if(isset($_GET['delete_file'])){
     $fileId = intval($_GET['delete_file']);
-    $conn->query("DELETE FROM uploaded_files WHERE id=$fileId");
-    $conn->query("DELETE FROM uploaded_data WHERE file_id=$fileId");
+
+    $stmt = $conn->prepare("DELETE FROM uploaded_files WHERE id=? AND user_id=?");
+    $stmt->bind_param("ii", $fileId, $userId);
+    $stmt->execute();
+
+    $stmt2 = $conn->prepare("DELETE FROM uploaded_data WHERE file_id=?");
+    $stmt2->bind_param("i", $fileId);
+    $stmt2->execute();
+
     header("Location: download.php");
     exit();
 }
@@ -77,14 +96,20 @@ $limit = 5;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
 
-// Total files count
-$totalRes = $conn->query("SELECT COUNT(*) as total FROM uploaded_files");
+// Total files count for current user
+$stmt = $conn->prepare("SELECT COUNT(*) as total FROM uploaded_files WHERE user_id=?");
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$totalRes = $stmt->get_result();
 $totalFiles = $totalRes->fetch_assoc()['total'];
 $totalPages = ceil($totalFiles / $limit);
 
-// Fetch current page files
+// Fetch current page files for current user
 $allFiles = [];
-$res = $conn->query("SELECT * FROM uploaded_files ORDER BY id DESC LIMIT $limit OFFSET $offset");
+$stmt = $conn->prepare("SELECT * FROM uploaded_files WHERE user_id=? ORDER BY id DESC LIMIT ? OFFSET ?");
+$stmt->bind_param("iii", $userId, $limit, $offset);
+$stmt->execute();
+$res = $stmt->get_result();
 while($row = $res->fetch_assoc()) $allFiles[] = $row;
 ?>
 
