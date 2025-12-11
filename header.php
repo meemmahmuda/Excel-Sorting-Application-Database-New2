@@ -1,5 +1,5 @@
 <style>
-    /* Top header container */
+
     .top-header {
         background: linear-gradient(90deg, #1a73e8, #4285f4);
         padding: 15px 30px;
@@ -12,14 +12,14 @@
         border-radius: 0 0 10px 10px;
     }
 
-    /* Left side: welcome message */
+    
     .top-header .left {
         font-size: 20px;
         font-weight: 600;
         letter-spacing: 0.5px;
     }
 
-    /* Right side: buttons/links */
+    
     .top-header .right a {
         background: #fff;
         color: #1a73e8;
@@ -39,7 +39,7 @@
         background: #f1f1f1;
     }
 
-    /* Special style for logout button */
+   
     .top-header .right a.logout {
         background: #d93025;
         color: #fff;
@@ -51,7 +51,7 @@
         box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
 
-    /* Responsive: reduce padding on small screens */
+    
     @media (max-width: 600px) {
         .top-header {
             flex-direction: column;

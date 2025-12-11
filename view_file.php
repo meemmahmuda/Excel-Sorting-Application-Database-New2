@@ -1,16 +1,16 @@
 <?php
 session_start();
 include 'db.php';
-include 'session.php';   // protect the page
+include 'session.php';   
 include 'header.php';  
 require 'vendor/autoload.php';
 
-// Validate file_id
+
 if(!isset($_GET['file_id'])) die("No file selected.");
 $fileId = intval($_GET['file_id']);
 $userId = $_SESSION['user_id'];
 
-// Fetch file info, ensuring it belongs to logged-in user
+
 $stmt = $conn->prepare("SELECT filename, type FROM uploaded_files WHERE id=? AND user_id=?");
 $stmt->bind_param("ii", $fileId, $userId);
 $stmt->execute();
@@ -19,7 +19,7 @@ if(!$file = $result->fetch_assoc()) die("File not found or access denied.");
 
 $fileType = $file['type'];
 
-// Handle status update only for unmatched files
+
 if($fileType === 'unmatched' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status']) && isset($_POST['row_ids'])){
     $statuses = $_POST['status'];
     $rowIds = $_POST['row_ids'];
@@ -31,14 +31,14 @@ if($fileType === 'unmatched' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($
     $success = "Status updated successfully.";
 }
 
-// Fetch rows for this file
+
 $stmt = $conn->prepare("SELECT * FROM uploaded_data WHERE file_id=?");
 $stmt->bind_param("i", $fileId);
 $stmt->execute();
 $dataRes = $stmt->get_result();
 $rows = $dataRes->fetch_all(MYSQLI_ASSOC);
 
-// Remove unwanted columns
+
 foreach($rows as &$r){
     unset($r['file_id']);
 }

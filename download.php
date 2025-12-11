@@ -1,22 +1,19 @@
 <?php
 session_start();
 include 'db.php';
-include 'session.php'; // protect page
+include 'session.php'; 
 include 'header.php';
 require 'vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-// Ensure user is logged in
+
 $userId = $_SESSION['user_id'] ?? 0;
 if(!$userId){
     header("Location: login.php");
     exit();
 }
 
-// ------------------------
-// Download Excel function
-// ------------------------
 function cleanRows($rows){
     if(empty($rows)) return [];
     foreach($rows as &$row){
@@ -36,7 +33,7 @@ function downloadExcel($rows, $filename){
     $sheet->fromArray(array_keys(reset($rows)), null, 'A1');
     $sheet->fromArray(array_map('array_values', $rows), null, 'A2');
 
-    if(ob_get_length()) ob_end_clean(); // prevent corruption
+    if(ob_get_length()) ob_end_clean(); 
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="'.$filename.'"');
     header('Cache-Control: max-age=0');
@@ -46,9 +43,7 @@ function downloadExcel($rows, $filename){
     exit();
 }
 
-// ------------------------
-// Handle download
-// ------------------------
+
 if(isset($_GET['download_file'])){
     $fileId = intval($_GET['download_file']);
     $stmt = $conn->prepare("SELECT * FROM uploaded_files WHERE id=? AND user_id=?");
@@ -71,9 +66,6 @@ if(isset($_GET['download_file'])){
     }
 }
 
-// ------------------------
-// Handle delete
-// ------------------------
 if(isset($_GET['delete_file'])){
     $fileId = intval($_GET['delete_file']);
 
@@ -89,14 +81,12 @@ if(isset($_GET['delete_file'])){
     exit();
 }
 
-// ------------------------
-// Pagination settings
-// ------------------------
+
 $limit = 5;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
 
-// Total files count for current user
+
 $stmt = $conn->prepare("SELECT COUNT(*) as total FROM uploaded_files WHERE user_id=?");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
@@ -104,7 +94,7 @@ $totalRes = $stmt->get_result();
 $totalFiles = $totalRes->fetch_assoc()['total'];
 $totalPages = ceil($totalFiles / $limit);
 
-// Fetch current page files for current user
+
 $allFiles = [];
 $stmt = $conn->prepare("SELECT * FROM uploaded_files WHERE user_id=? ORDER BY id DESC LIMIT ? OFFSET ?");
 $stmt->bind_param("iii", $userId, $limit, $offset);
@@ -118,7 +108,7 @@ while($row = $res->fetch_assoc()) $allFiles[] = $row;
 <head>
     <title>Download Files</title>
     <style>
-        /* Basic styling */
+       
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
         body { background: #f2f2f2; padding: 0; margin: 0; font-family: Arial, sans-serif; }
         table { border-collapse: collapse; width: 90%; margin: 20px auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
@@ -163,7 +153,7 @@ while($row = $res->fetch_assoc()) $allFiles[] = $row;
 <?php endforeach; ?>
 </table>
 
-<!-- Pagination -->
+
 <div class="pagination">
     <?php if($page > 1): ?>
         <a href="?page=<?= $page-1 ?>">&laquo; Previous</a>

@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username_or_email = trim($_POST['username_or_email']);
     $password = trim($_POST['password']);
 
-    // Include role and is_approved check
+
     $query = "SELECT id, username, password, role, is_approved 
               FROM users 
               WHERE (username = ? OR email = ?) 

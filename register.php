@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'db.php'; // Make sure this connects to DB and $conn is valid
+include 'db.php'; 
 
 $message = "";
 
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $message = "Username and password are required!";
     } else {
 
-        // Check if username already exists
+
         $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
@@ -23,10 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($stmt->num_rows > 0) {
             $message = "Username already taken!";
         } else {
-            // Hash password
+        
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
-            // Insert user
+          
             $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
             $stmt->bind_param("sss", $username, $email, $hashedPassword);
 
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <title>Register</title>
     <style>
-        /* Reset some default styles */
+        
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
 
         body {

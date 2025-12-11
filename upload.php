@@ -2,8 +2,8 @@
 session_start();
 require 'vendor/autoload.php';
 include 'db.php';
-include 'session.php';  // ensures user is logged in
-include 'header.php';   // top bar
+include 'session.php';  
+include 'header.php';  
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -12,7 +12,7 @@ ini_set('memory_limit', '1024M');
 
 $message = "";
 
-// Allowed bank portals
+
 $bankPortals = [
     "DNCC Bank Portal","DBBL Holding","DBBL Holding Due","DBBL MFS","DBBL MFS Due",
     "Bkash Holding","Sonali Bank","Standard Bank","Modhumoti Bank",
@@ -20,7 +20,7 @@ $bankPortals = [
     "DBBL TL Collection","DBBL TL Correction","Bkash TL"
 ];
 
-// Column mapping arrays
+
 $holdingCols = ['holding no', 'tl no', 'holding no / tl no', 'e-holding', 's/l', 'e-holding no', 'e-holding number', 'bill no', 'account number', 'docnumber', 'biller_ref_no', 'beneficiaryname'];
 $txnCols     = ['txn id', 'tranno', 'transaction id', 'transactio id', 'bkash transaction id', 'transactionno', 'payment no', 'transaction id (dncc)', 'transaction_id', 'banktranid'];
 $dateCols    = ['date', 'pay date', 'txn_date', 'trandate', 'date & time', 'territory code', 'payment date', 'transaction date', 'cdate'];
@@ -39,13 +39,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             $fileName = $_FILES["file$i"]['name'];
             $bankName = $_POST["bank_name$i"] ?? null;
 
-            // Validate bank selection
+           
             if(!in_array($bankName, $bankPortals)){
                 $message = "Invalid bank selected for file $i!";
                 break;
             }
 
-            // Insert file metadata
+           
             $stmt = $conn->prepare("INSERT INTO uploaded_files (filename, bank_name, type, user_id) VALUES (?,?,?,?)");
             $type = 'uploaded';
             $stmt->bind_param("sssi", $fileName, $bankName, $type, $userId);
@@ -53,16 +53,16 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             $fileId = $stmt->insert_id;
             $uploadedFileIds[] = $fileId;
 
-            // Load Excel
+        
             $spreadsheet = IOFactory::load($fileTmp);
             $sheet = $spreadsheet->getActiveSheet();
             $rows = $sheet->toArray();
             if(count($rows) < 1) continue;
 
-            // Normalize headers
+           
             $header = array_map(fn($h) => strtolower(trim(str_replace("\xc2\xa0", ' ', $h))), $rows[0]);
 
-            // Map headers
+         
             $colIndex = [
                 'holding_or_tl' => null,
                 'txn_id'        => null,
@@ -85,7 +85,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                 elseif($col === 'payment type' || $col === 'payment method') $colIndex['payment_type'] = $idx;
             }
 
-            // Insert rows
+           
             insertRows($rows, $fileId, $conn, $colIndex, $type);
         }
     }
@@ -104,14 +104,14 @@ function insertRows($rows, $fileId, $conn, $colIndex, $type){
     for($r=1; $r<count($rows); $r++){
         $row = $rows[$r];
 
-        // Skip blank rows
+
         $isBlank = true;
         foreach($row as $cell){
             if(trim($cell) !== '') { $isBlank = false; break; }
         }
         if($isBlank) continue;
 
-        // Skip totals
+        
         if(stripos(implode(' ', $row), 'total') !== false) continue;
 
         $dataChunk[] = [
@@ -150,7 +150,7 @@ function saveChunk($dataChunk, $fileId, $conn, $type){
 <head>
     <title>Upload Excel Files</title>
     <style>
-        /* styling same as before */
+       
         * { box-sizing: border-box; margin:0; padding:0; font-family: Arial,sans-serif; }
         body { background:#f2f2f2; display:flex; flex-direction:column; min-height:100vh; }
         .main-container { flex:1; display:flex; justify-content:center; align-items:center; padding:20px; margin-top:80px; }

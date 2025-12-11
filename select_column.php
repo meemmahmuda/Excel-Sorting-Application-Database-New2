@@ -1,16 +1,16 @@
 <?php
 session_start();
 include 'db.php';
-include 'session.php'; // protect page
+include 'session.php'; 
 include 'header.php';
 
-// Check user logged in
+
 if(!isset($_SESSION['user_id'])){
     header("Location: login.php");
     exit();
 }
 
-// Check uploaded files
+
 if(empty($_SESSION['uploaded_file_ids']) || count($_SESSION['uploaded_file_ids']) < 2){
     header("Location: upload.php");
     exit();
@@ -24,7 +24,7 @@ foreach($fileIds as $id){
     $row = $result->fetch_assoc();
     if($row){
         $cols = array_keys($row);
-        $cols = array_filter($cols, fn($c) => !in_array($c,['id','file_id'])); // exclude id and file_id
+        $cols = array_filter($cols, fn($c) => !in_array($c,['id','file_id'])); 
         $columns[$id] = $cols;
     }
 }
@@ -44,14 +44,14 @@ foreach($fileIds as $id){
             min-height: 100vh;
         }
 
-        /* Main container for form */
+       
         .main-container {
             flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
-            margin-top: 80px; /* leave space for header */
+            margin-top: 80px; 
         }
 
         .form-container {
