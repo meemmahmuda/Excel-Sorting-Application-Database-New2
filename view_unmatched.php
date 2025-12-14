@@ -9,18 +9,13 @@ if (($_SESSION['role'] ?? '') !== 'admin') {
     exit();
 }
 
-/* ============================
-   FILTER VALUES
-============================ */
 $selectedUser = $_GET['user'] ?? '';
 $selectedBank = $_GET['bank'] ?? '';
 $selectedStatus = $_GET['status'] ?? '';
 $fromDate = $_GET['from_date'] ?? '';
 $toDate = $_GET['to_date'] ?? '';
 
-/* ============================
-   DROPDOWN DATA
-============================ */
+
 $usersRes = $conn->query("SELECT id, username FROM users ORDER BY username");
 $banksRes = $conn->query("SELECT DISTINCT bank_name FROM uploaded_files ORDER BY bank_name");
 $statusRes = $conn->query("SELECT DISTINCT status 
@@ -28,9 +23,7 @@ $statusRes = $conn->query("SELECT DISTINCT status
                            WHERE type='unmatched' AND status IS NOT NULL AND status != '' 
                            ORDER BY status");
 
-/* ============================
-   FETCH UNMATCHED DATA
-============================ */
+
 $sql = "
 SELECT 
     ud.id,
@@ -78,13 +71,11 @@ $stmt->execute();
 $result = $stmt->get_result();
 $rows = $result->fetch_all(MYSQLI_ASSOC);
 
-/* ============================
-   PHP DATE PARSER FUNCTION
-============================ */
+
 function parseDate($dateStr) {
     $dateStr = trim($dateStr);
     
-    // Fix missing space between date and time like 09-DEC-202513:01:57
+
     if (preg_match('/^\d{2}-[A-Z]{3}-\d{4}\d{2}:/i', $dateStr)) {
         $dateStr = substr($dateStr,0,11).' '.substr($dateStr,11);
     }
@@ -106,11 +97,11 @@ function parseDate($dateStr) {
     return false;
 }
 
-// Convert filter dates
+
 $fromTs = $fromDate ? parseDate($fromDate) : null;
 $toTs = $toDate ? parseDate($toDate) : null;
 
-// Filter rows by date range
+
 $filteredRows = [];
 foreach ($rows as $row) {
     $rowDate = parseDate($row['date']);
@@ -121,10 +112,10 @@ foreach ($rows as $row) {
     if ($include) $filteredRows[] = $row;
 }
 
-// Total unmatched count
+
 $totalUnmatched = count($filteredRows);
 
-// Group rows by bank and calculate total amount per bank
+
 $groupedByBank = [];
 $amountByBank = [];
 foreach ($filteredRows as $row) {
@@ -160,7 +151,7 @@ tr:nth-child(even) { background:#f9f9f9; }
 <div class="container">
 <h2>Unmatched Data (Admin Panel)</h2>
 
-<!-- FILTER FORM -->
+
 <form method="get">
 <div class="filter-box">
 <select name="user">
@@ -191,7 +182,7 @@ tr:nth-child(even) { background:#f9f9f9; }
 </div>
 </form>
 
-<!-- TOTAL COUNT -->
+
 <div class="total-count">Total Unmatched Data: <?= $totalUnmatched ?></div>
 
 <?php if(empty($groupedByBank)): ?>
