@@ -71,7 +71,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 $rows   = $result->fetch_all(MYSQLI_ASSOC);
 
-/* ---------------- DATE PARSER ---------------- */
+
 function parseDate($dateStr) {
     $dateStr = trim($dateStr);
 
@@ -100,7 +100,7 @@ function parseDate($dateStr) {
 $fromTs = $fromDate ? parseDate($fromDate) : null;
 $toTs   = $toDate ? parseDate($toDate) : null;
 
-/* ---------------- DATE FILTER ---------------- */
+
 $filteredRows = [];
 foreach ($rows as $row) {
     $rowDate = parseDate($row['date']);
@@ -114,7 +114,7 @@ foreach ($rows as $row) {
 
 $totalUnmatched = count($filteredRows);
 
-/* ---------------- GROUP BY BANK ---------------- */
+
 $groupedByBank = [];
 $amountByBank  = [];
 
@@ -126,7 +126,7 @@ foreach ($filteredRows as $row) {
         ($amountByBank[$bank] ?? 0) + floatval(str_replace(',', '', $row['amount']));
 }
 
-/* ---------------- ALL POSSIBLE COLUMNS ---------------- */
+
 $allColumns = [
     'username'      => 'User',
     'holding_or_tl' => 'Holding / TL',
@@ -211,7 +211,7 @@ tr:nth-child(even) { background:#f9f9f9; }
 <?php foreach ($groupedByBank as $bankName => $rowsByBank): ?>
 
 <?php
-// Detect visible columns for this bank
+
 $visibleColumns = [];
 foreach ($allColumns as $key => $label) {
     foreach ($rowsByBank as $r) {
