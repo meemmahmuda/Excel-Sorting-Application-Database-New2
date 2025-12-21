@@ -71,14 +71,11 @@ $stmt->execute();
 $result = $stmt->get_result();
 $rows   = $result->fetch_all(MYSQLI_ASSOC);
 
-
 function parseDate($dateStr) {
     $dateStr = trim($dateStr);
-
     if (preg_match('/^\d{2}-[A-Z]{3}-\d{4}\d{2}:/i', $dateStr)) {
         $dateStr = substr($dateStr, 0, 11) . ' ' . substr($dateStr, 11);
     }
-
     $formats = [
         'd-M-Y H:i:s','d-M-Y H:i','d-M-Y','d-M-Y h:i:s A','d-M-Y h:i A',
         'd-m-Y H:i:s','d-m-Y H:i','d-m-Y',
@@ -87,12 +84,10 @@ function parseDate($dateStr) {
         'd/m/Y H:i:s','d/m/Y H:i','d/m/Y',
         'd M Y H:i:s','d M Y H:i','d M Y'
     ];
-
     foreach ($formats as $f) {
         $d = DateTime::createFromFormat($f, $dateStr);
         if ($d !== false) return $d;
     }
-
     $ts = strtotime($dateStr);
     return $ts ? new DateTime("@$ts") : false;
 }
@@ -100,8 +95,17 @@ function parseDate($dateStr) {
 $fromTs = $fromDate ? parseDate($fromDate) : null;
 $toTs   = $toDate ? parseDate($toDate) : null;
 
+$txn_counts = [];
+foreach ($rows as $row) {
+    if (!empty($row['txn_id'])) {
+        $tid = $row['txn_id'];
+        $txn_counts[$tid] = ($txn_counts[$tid] ?? 0) + 1;
+    }
+}
 
 $filteredRows = [];
+$unique_txn_ids = []; 
+
 foreach ($rows as $row) {
     $rowDate = parseDate($row['date']);
     if (!$rowDate) continue;
@@ -110,22 +114,22 @@ foreach ($rows as $row) {
     if ($toTs && $rowDate > $toTs) continue;
 
     $filteredRows[] = $row;
+    
+    if (!empty($row['txn_id'])) {
+        $unique_txn_ids[$row['txn_id']] = true;
+    }
 }
 
-$totalUnmatched = count($filteredRows);
-
-
+$totalUnmatched = count($unique_txn_ids); 
 $groupedByBank = [];
 $amountByBank  = [];
 
 foreach ($filteredRows as $row) {
     $bank = $row['bank_name'] ?: 'Unknown Bank';
     $groupedByBank[$bank][] = $row;
-
-    $amountByBank[$bank] =
-        ($amountByBank[$bank] ?? 0) + floatval(str_replace(',', '', $row['amount']));
+    
+    $amountByBank[$bank] = ($amountByBank[$bank] ?? 0) + floatval(str_replace(',', '', $row['amount']));
 }
-
 
 $allColumns = [
     'username'      => 'User',
@@ -135,6 +139,7 @@ $allColumns = [
     'amount'        => 'Amount',
     'gateway'       => 'Gateway',
     'payment_type'  => 'Payment Type',
+    'bank_name'     => 'Bank Name',
     'status'        => 'Status'
 ];
 ?>
@@ -158,6 +163,7 @@ tr:nth-child(even) { background:#f9f9f9; }
 .no-data { text-align:center; font-weight:bold; color:#888; margin-top:30px; }
 .bank-title { margin-top:30px; font-weight:bold; font-size:16px; color:#1a73e8; }
 .total-count { text-align:center; margin-bottom:20px; font-weight:bold; color:#1a73e8; }
+.duplicate-row { background-color: #ffcccc !important; }
 </style>
 </head>
 
@@ -202,7 +208,7 @@ tr:nth-child(even) { background:#f9f9f9; }
 </div>
 </form>
 
-<div class="total-count">Total Unmatched Data: <?= $totalUnmatched ?></div>
+<div class="total-count">Total Unmatched Data (Unique): <?= $totalUnmatched ?></div>
 
 <?php if (empty($groupedByBank)): ?>
     <div class="no-data">No unmatched data found.</div>
@@ -211,7 +217,6 @@ tr:nth-child(even) { background:#f9f9f9; }
 <?php foreach ($groupedByBank as $bankName => $rowsByBank): ?>
 
 <?php
-
 $visibleColumns = [];
 foreach ($allColumns as $key => $label) {
     foreach ($rowsByBank as $r) {
@@ -225,7 +230,7 @@ foreach ($allColumns as $key => $label) {
 
 <div class="bank-title">
     <?= htmlspecialchars($bankName) ?><br>
-    Total Unmatched Rows: (<?= count($rowsByBank) ?>)<br>
+    Total Rows: (<?= count($rowsByBank) ?>)<br>
     Total Amount: <?= number_format($amountByBank[$bankName], 2) ?>
 </div>
 
@@ -236,8 +241,10 @@ foreach ($allColumns as $key => $label) {
 <?php endforeach; ?>
 </tr>
 
-<?php foreach ($rowsByBank as $r): ?>
-<tr>
+<?php foreach ($rowsByBank as $r): 
+    $isDuplicate = (!empty($r['txn_id']) && $txn_counts[$r['txn_id']] > 1);
+?>
+<tr class="<?= $isDuplicate ? 'duplicate-row' : '' ?>">
 <?php foreach ($visibleColumns as $key => $label): ?>
     <td><?= htmlspecialchars($r[$key] ?? '') ?></td>
 <?php endforeach; ?>

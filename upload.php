@@ -14,10 +14,10 @@ $message = "";
 
 
 $bankPortals = [
-    "DNCC Bank Portal","CCC Bank Portal","DBBL Holding","DBBL Holding Due","DBBL MFS","DBBL MFS Due",
-    "Bkash Holding","Sonali Bank","Standard Bank","Modhumoti Bank",
+    "DNCC Bank Portal","CCC Bank Portal","DBBL Holding DNCC", "DBBL Holding CCC","DBBL Holding Due DNCC", "DBBL Holding Due CCC", "DBBL MFS DNCC", "DBBL MFS CCC","DBBL MFS Due DNCC", "DBBL MFS Due CCC",
+    "Bkash Holding","Sonali Bank DNCC", "Sonali Bank CCC","Standard Bank","Modhumoti Bank",
     "Trust TAP Holding","Trust TAP TL","Upay MFS","OK Wallet",
-    "DBBL TL Collection","DBBL TL Correction","Bkash TL"
+    "DBBL TL Collection DNCC", "DBBL TL Collection CCC","DBBL TL Correction DNCC", "DBBL TL Correction CCC","Bkash TL"
 ];
 
 
