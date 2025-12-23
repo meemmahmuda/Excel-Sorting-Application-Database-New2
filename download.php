@@ -128,7 +128,7 @@ while($row = $res->fetch_assoc()) $allFiles[] = $row;
 </head>
 <body>
 
-<!-- <h2>All Uploaded Files</h2> -->
+
 <br>
 <table>
 <tr>

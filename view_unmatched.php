@@ -73,27 +73,36 @@ $rows   = $result->fetch_all(MYSQLI_ASSOC);
 
 function parseDate($dateStr) {
     $dateStr = trim($dateStr);
-    if (preg_match('/^\d{2}-[A-Z]{3}-\d{4}\d{2}:/i', $dateStr)) {
-        $dateStr = substr($dateStr, 0, 11) . ' ' . substr($dateStr, 11);
-    }
+
+    $dateStr = preg_replace(
+        '/^(\d{2}-[A-Z]{3}-\d{4})(\d{2}:\d{2}:\d{2})$/i',
+        '$1 $2',
+        $dateStr
+    );
+
     $formats = [
-        'd-M-Y H:i:s','d-M-Y H:i','d-M-Y','d-M-Y h:i:s A','d-M-Y h:i A',
+        'd-M-Y H:i:s','d-M-Y H:i','d-M-Y',
         'd-m-Y H:i:s','d-m-Y H:i','d-m-Y',
-        'Y-m-d H:i:s','Y-m-d H:i','Y-m-d',
-        'm/d/Y H:i:s','m/d/Y H:i','m/d/Y',
-        'd/m/Y H:i:s','d/m/Y H:i','d/m/Y',
-        'd M Y H:i:s','d M Y H:i','d M Y'
+        'Y-m-d H:i:s','Y-m-d H:i','Y-m-d'
     ];
+
     foreach ($formats as $f) {
         $d = DateTime::createFromFormat($f, $dateStr);
         if ($d !== false) return $d;
     }
+
     $ts = strtotime($dateStr);
-    return $ts ? new DateTime("@$ts") : false;
+    return $ts ? (new DateTime())->setTimestamp($ts) : false;
 }
+
 
 $fromTs = $fromDate ? parseDate($fromDate) : null;
 $toTs   = $toDate ? parseDate($toDate) : null;
+
+if ($toTs) {
+    $toTs->setTime(23, 59, 59);
+}
+
 
 $txn_counts = [];
 foreach ($rows as $row) {
@@ -214,11 +223,23 @@ tr:nth-child(even) { background:#f9f9f9; }
     <div class="no-data">No unmatched data found.</div>
 <?php else: ?>
 
+
+<?php
+$seenTxnIds = [];
+?>
+
 <?php foreach ($groupedByBank as $bankName => $rowsByBank): ?>
 
 <?php
 $visibleColumns = [];
+
 foreach ($allColumns as $key => $label) {
+
+    if ($key === 'status') {
+        $visibleColumns[$key] = $label;
+        continue;
+    }
+
     foreach ($rowsByBank as $r) {
         if (!empty(trim($r[$key] ?? ''))) {
             $visibleColumns[$key] = $label;
@@ -242,7 +263,16 @@ foreach ($allColumns as $key => $label) {
 </tr>
 
 <?php foreach ($rowsByBank as $r): 
-    $isDuplicate = (!empty($r['txn_id']) && $txn_counts[$r['txn_id']] > 1);
+$isDuplicate = false;
+
+if (!empty($r['txn_id'])) {
+    if (isset($seenTxnIds[$r['txn_id']])) {
+        $isDuplicate = true;
+    } else {
+        $seenTxnIds[$r['txn_id']] = true;
+    }
+}
+
 ?>
 <tr class="<?= $isDuplicate ? 'duplicate-row' : '' ?>">
 <?php foreach ($visibleColumns as $key => $label): ?>
