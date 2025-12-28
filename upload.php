@@ -21,9 +21,9 @@ $bankPortals = [
 ];
 
 
-$holdingCols = ['holding no', 'tl no', 'holding no / tl no', 'e-holding', 's/l', 'e-holding no', 'e-holding number', 'bill no', 'account number', 'docnumber', 'document number', 'biller_ref_no', 'beneficiaryname'];
-$txnCols     = ['txn id', 'tranno', 'transaction id', 'transactio id', 'bkash transaction id', 'transactionno', 'payment no', 'transaction id (dncc)', 'transaction_id', 'banktranid','transaction number'];
-$dateCols    = ['date', 'pay date', 'txn_date', 'trandate', 'date & time', 'territory code', 'payment date', 'transaction date', 'cdate'];
+$holdingCols = ['holding no', 'tl no', 'holding no / tl no', 'e-holding', 's/l', 'e-holding no', 'e-holding number', 'bill no', 'account number', 'docnumber', 'document number', 'biller_ref_no', 'beneficiaryname' , 'bill_no'];
+$txnCols     = ['txn id', 'tranno', 'transaction id', 'transactio id', 'bkash transaction id', 'transactionno', 'payment no', 'transaction id (dncc)', 'transaction_id', 'banktranid','transaction number' , 'txn_id'];
+$dateCols    = ['date', 'pay date', 'txn_date', 'trandate', 'date & time', 'territory code', 'payment date', 'transaction date', 'cdate' , 'txn_value_dt'];
 $amountCols  = ['amount', 'paid amount', 'txn_amt', 'total amount', 'reqamount', 'amount bdt', 'totalamt'];
 $paymentTypeCols = ['paymenttype', 'payment type'];
 
