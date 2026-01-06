@@ -14,6 +14,7 @@ $selectedBank   = $_GET['bank'] ?? '';
 $selectedStatus = $_GET['status'] ?? '';
 $fromDate       = $_GET['from_date'] ?? '';
 $toDate         = $_GET['to_date'] ?? '';
+$txnType = $_GET['txn_type'] ?? '';
 
 $usersRes = $conn->query("SELECT id, username FROM users ORDER BY username");
 $banksRes = $conn->query("SELECT DISTINCT bank_name FROM uploaded_files ORDER BY bank_name");
@@ -113,19 +114,42 @@ foreach ($rows as $row) {
 }
 
 $filteredRows = [];
-$unique_txn_ids = []; 
+$unique_txn_ids = [];
+$shownTxnIds = [];   
 
 foreach ($rows as $row) {
+
     $rowDate = parseDate($row['date']);
     if (!$rowDate) continue;
 
     if ($fromTs && $rowDate < $fromTs) continue;
     if ($toTs && $rowDate > $toTs) continue;
 
-    $filteredRows[] = $row;
+    $txnId = trim($row['txn_id'] ?? '');
+
+  
+    if ($txnType === 'single') {
+        if ($txnId === '') continue;
+
+        if (isset($shownTxnIds[$txnId])) {
+            continue; 
+        }
+        $shownTxnIds[$txnId] = true;
+    }
+
     
-    if (!empty($row['txn_id'])) {
-        $unique_txn_ids[$row['txn_id']] = true;
+    if ($txnType === 'multiple') {
+        if ($txnId === '') continue;
+
+        if (($txn_counts[$txnId] ?? 0) <= 1) {
+            continue; 
+        }
+    }
+
+    $filteredRows[] = $row;
+
+    if ($txnId !== '') {
+        $unique_txn_ids[$txnId] = true;
     }
 }
 
@@ -211,6 +235,17 @@ tr:nth-child(even) { background:#f9f9f9; }
 
 <input type="date" name="from_date" value="<?= htmlspecialchars($fromDate) ?>">
 <input type="date" name="to_date" value="<?= htmlspecialchars($toDate) ?>">
+
+<select name="txn_type">
+    <option value="">-- Txn Type --</option>
+    <option value="single" <?= ($_GET['txn_type'] ?? '') === 'single' ? 'selected' : '' ?>>
+        One Time
+    </option>
+    <option value="multiple" <?= ($_GET['txn_type'] ?? '') === 'multiple' ? 'selected' : '' ?>>
+        Multiple
+    </option>
+</select>
+
 
 <button type="submit">Filter</button>
 <a href="view_unmatched.php" class="reset">Reset</a>
