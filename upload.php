@@ -17,11 +17,11 @@ $bankPortals = [
     "DNCC Bank Portal","CCC Bank Portal","DBBL Holding DNCC", "DBBL Holding CCC","DBBL Holding Due DNCC", "DBBL Holding Due CCC", "DBBL MFS DNCC", "DBBL MFS CCC","DBBL MFS Due DNCC", "DBBL MFS Due CCC",
     "Bkash Holding","Sonali Bank DNCC", "Sonali Bank CCC","Standard Bank","Modhumoti Bank",
     "Trust TAP Holding","Trust TAP TL","Upay MFS","OK Wallet",
-    "DBBL TL Collection DNCC", "DBBL TL Collection CCC","DBBL TL Correction DNCC", "DBBL TL Correction CCC","Bkash TL"
+    "DBBL TL Collection DNCC", "DBBL TL Collection CCC","DBBL TL Correction DNCC", "DBBL TL Correction CCC","Bkash TL","Sonali Bank TL DNCC"
 ];
 
 
-$holdingCols = ['holding no', 'tl no', 'holding no / tl no', 'e-holding', 's/l', 'e-holding no', 'e-holding number', 'bill no', 'account number', 'docnumber', 'document number', 'biller_ref_no', 'beneficiaryname' , 'bill_no'];
+$holdingCols = ['holding no', 'tl no', 'holding no / tl no', 'e-holding', 's/l', 'e-holding no', 'e-holding number', 'bill no', 'account number', 'docnumber', 'document number', 'biller_ref_no','beneficiaryname' ,'reftran/inv no','bill_no'];
 $txnCols     = ['txn id', 'tranno', 'transaction id', 'transactio id', 'bkash transaction id', 'transactionno', 'payment no', 'transaction id (dncc)', 'transaction_id', 'banktranid','transaction number' , 'txn_id'];
 $dateCols    = ['date', 'pay date', 'txn_date', 'trandate', 'date & time', 'territory code', 'payment date', 'transaction date', 'cdate' , 'txn_value_dt'];
 $amountCols  = ['amount', 'paid amount', 'txn_amt', 'total amount', 'reqamount', 'amount bdt', 'totalamt'];
@@ -75,6 +75,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
 
             foreach($header as $idx => $col){
                 $col = trim(strtolower($col));
+
                 if(in_array($col, $holdingCols)) $colIndex['holding_or_tl'] = $idx;
                 elseif(in_array($col, $txnCols)) $colIndex['txn_id'] = $idx;
                 elseif(in_array($col, $dateCols)) $colIndex['date'] = $idx;
@@ -85,6 +86,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                 elseif($col === 'payment type' || $col === 'payment method') $colIndex['payment_type'] = $idx;
             }
 
+            if($bankName === 'Sonali Bank TL DNCC'){
+                $reftranIndex = array_search('reftran/inv no', $header);
+                if($reftranIndex !== false){
+                    $colIndex['holding_or_tl'] = $reftranIndex;
+                }
+            }
            
             insertRows($rows, $fileId, $conn, $colIndex, $type);
         }
