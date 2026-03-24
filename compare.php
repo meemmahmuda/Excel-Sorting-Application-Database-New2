@@ -75,8 +75,10 @@ $unmatched2 = array_filter($data2, fn($r) => trim($r[$col2]) !== '' && !in_array
 function saveUnmatched($conn, $rows, $prefix, $bankName, $userId){
     if(empty($rows)) return null;
 
+    date_default_timezone_set('Asia/Dhaka');
     $cleanBank = preg_replace('/[^A-Za-z0-9]/', '_', $bankName);
-    $filename = $prefix . '_' . $cleanBank . '_' . time() . '.xlsx';
+    $timestamp = date('Y-m-d_H-i-s'); 
+    $filename = $prefix . '_' . $cleanBank . '_' . $timestamp . '.xlsx';
     $type = 'unmatched';
 
   
